@@ -63,7 +63,18 @@ async function run() {
         res.send(result);
     })
 
+    //all available foods
+    app.get('/availableFoods', async(req,res)=>{
+        const result= await foodsCollection.find({food_status:'available'}).toArray();
+        res.send(result);
+    })
 
+    //for search available foods
+    app.get('/searchFood', async(req,res)=>{
+        const query = req.query?.search;
+        const result = await foodsCollection.find({food_name:query, food_status:'available'}).toArray();
+        res.send(result);
+    })
 
 
 
