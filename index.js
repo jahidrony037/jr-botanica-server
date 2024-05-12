@@ -76,6 +76,18 @@ async function run() {
         res.send(result);
     })
 
+    //for sort available foods by expired date descending
+    app.get('/sortFoods/descending', async(req,res)=>{
+        const result= await foodsCollection.find({food_status:'available'}).sort({expired_date:-1}).toArray();
+        res.send(result);
+    })
+
+    //for sort available foods by expired date ascending
+    app.get('/sortFoods/ascending', async(req,res)=>{
+        const result= await foodsCollection.find({food_status:'available'}).sort({expired_date:1}).toArray();
+        res.send(result);
+    }) 
+
 
 
 
