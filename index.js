@@ -139,10 +139,20 @@ async function run() {
         $set: {
           notes: updateValue.notes,
           requested_date: new Date(updateValue.request_date),
-          food_status: updateValue.food_status
+          food_status: updateValue.food_status,
+          requested_user: updateValue.request_user
         },
       };
       const result = await foodsCollection.updateOne(query,updateFood,options);
+      res.send(result);
+    })
+
+
+    //all requested food fetch api by user
+    app.get('/requestedFoods', async(req,res)=>{
+      const request_user= req.query;
+      // console.log(request_user);
+      const result = await foodsCollection.find({requested_user:request_user?.email}).toArray();
       res.send(result);
     })
 
