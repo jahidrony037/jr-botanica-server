@@ -1,16 +1,19 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion, Int32 } = require('mongodb');
+const { MongoClient, ServerApiVersion, Int32, ObjectId } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors({
-    origin:['http://localhost:5173'],
+    origin:['http://localhost:5173', 'http://localhost:5000'],
     credentials:true
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 
 
@@ -34,6 +37,32 @@ async function run() {
 
     const foodsCollection = client.db("foodsDB").collection("foods");
 
+
+
+    //auth related api
+    app.post('/jwt', async(req, res)=>{
+      const user = req.body;
+      console.log(user);
+      const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {expiresIn:'1hr'});
+      res.cookie('token',token,{
+        httpOnly:true,
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      })
+      .send({success:true})
+    })
+
+
+
+
+
+
+
+
+
+
+
+
     //food features api
 
     //food add api
@@ -42,7 +71,7 @@ async function run() {
         // console.log(food);
         const modifyFood = {
             donator_email: food.donator_email,
-            expired_date: food.expired_date,
+            expired_date: new Date(food.expired_date),
             food_name: food.food_name,
             food_quantity: new Int32(food.food_quantity),
             food_status: food.food_status,
@@ -65,14 +94,14 @@ async function run() {
 
     //all available foods
     app.get('/availableFoods', async(req,res)=>{
-        const result= await foodsCollection.find({food_status:'available'}).toArray();
+        const result= await foodsCollection.find({food_status:'available',}).toArray();
         res.send(result);
     })
 
     //for search available foods
     app.get('/searchFood', async(req,res)=>{
         const query = req.query?.search;
-        const result = await foodsCollection.find({food_name:query, food_status:'available'}).toArray();
+        const result = await foodsCollection.find({food_name:{$regex:query,$options:'i'}, food_status:'available'}).toArray();
         res.send(result);
     })
 
@@ -89,6 +118,33 @@ async function run() {
     }) 
 
 
+    //for a single food get api 
+    app.get('/food/:id', async(req,res)=>{
+      const id = req.params.id;
+      // console.log(id);
+      const query = {_id:new ObjectId(id)}
+      const result = await foodsCollection.findOne(query);
+      res.send(result);
+    })
+
+    //for a single food patch api
+    app.patch('/food/:id', async(req, res)=>{
+      const id= req.params.id;
+      const updateValue= req.body;
+      // console.log(updateValue);
+      // console.log(id);
+      const query = {_id:new ObjectId(id)};
+      const options = { upsert: true };
+      const updateFood = {
+        $set: {
+          notes: updateValue.notes,
+          requested_date: new Date(updateValue.request_date),
+          food_status: updateValue.food_status
+        },
+      };
+      const result = await foodsCollection.updateOne(query,updateFood,options);
+      res.send(result);
+    })
 
 
 
