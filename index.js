@@ -148,6 +148,15 @@ async function run() {
     })
 
 
+    //all foods load api by specific user added
+    app.get('/userFoods', async (req,res)=>{
+        const user = req.query;
+        // console.log(user);
+        const result = await foodsCollection.find({donator_email: user?.email}).toArray();
+        res.send(result);
+    } )
+
+
     //all requested food fetch api by user
     app.get('/requestedFoods', async(req,res)=>{
       const request_user= req.query;
@@ -155,6 +164,9 @@ async function run() {
       const result = await foodsCollection.find({requested_user:request_user?.email}).toArray();
       res.send(result);
     })
+
+    
+
 
 
 
