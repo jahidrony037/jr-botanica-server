@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors({
-    origin:['http://localhost:5173', 'http://localhost:5000'],
+    origin:[`${process.env.CLIENT_URL}`, `${process.env.SERVER_URL}`],
     credentials:true
 }));
 app.use(express.json());
@@ -66,16 +66,19 @@ async function run() {
 
     //auth related api
 
+    //create cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    };
+
     //create a jwt token for user api
     app.post('/jwt', async(req, res)=>{
       const user = req.body;
       // console.log(user);
       const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {expiresIn:'1hr'});
-      res.cookie('token',token,{
-        httpOnly:true,
-        secure: process.env.NODE_ENV === 'production', 
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      })
+      res.cookie('token',token,{cookieOptions})
       .send({success:true})
     })
 
@@ -83,7 +86,7 @@ async function run() {
     app.post('/logOut', async(req,res)=>{
       // const user = req.body;
       // console.log("user-logout", user);
-      res.clearCookie('token', {maxAge:0})
+      res.clearCookie('token', {...cookieOptions, maxAge:0})
       .send({success:true})
     })
 
