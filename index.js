@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors({
-    origin:[`${process.env.CLIENT_URL}`, `${process.env.SERVER_URL}`],
+    origin:[`${process.env.CLIENT_URL}`, `${process.env.CLIENT_URL1}`, `${process.env.SERVER_URL}`, `${process.env.P_SERVER_URL}`, `${process.env.L_CLIENT_URL}`],
     credentials:true
 }));
 app.use(express.json());
@@ -20,6 +20,7 @@ app.use(cookieParser());
 
 const verifyToken = async (req,res,next)=>{
   const token=req.cookies.token;
+  console.log(token);
   if(!token){
       return res.status(401).send({message: 'unAuthorized'});
   }
@@ -78,7 +79,7 @@ async function run() {
       const user = req.body;
       // console.log(user);
       const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {expiresIn:'1hr'});
-      res.cookie('token',token,{cookieOptions})
+      res.cookie('token',token,cookieOptions)
       .send({success:true})
     })
 
@@ -189,6 +190,10 @@ async function run() {
 
     //all available foods load api by specific user added food
     app.get('/userFoods', verifyToken, async (req,res)=>{
+      // console.log(req.query?.email);
+      if(req.query?.email!== req.user){
+        return res.status(403).send({message: 'Forbidden Access'});
+      }
         const user = req.query;
         // console.log(user);
         const result = await foodsCollection.find({donator_email: user?.email}).toArray();
@@ -198,6 +203,9 @@ async function run() {
 
     //all requested food fetch api by user
     app.get('/requestedFoods', verifyToken, async(req,res)=>{
+      if(req.query?.email!== req.user){
+        return res.status(403).send({message: 'Forbidden Access'});
+      }
       const request_user= req.query;
       // console.log(request_user);
       const result = await foodsCollection.find({requested_user:request_user?.email}).toArray();
@@ -206,6 +214,7 @@ async function run() {
 
     //handle delete food api
     app.delete('/deleteFood/:id', verifyToken, async(req,res)=>{
+
        const id=req.params.id;
        const result = await foodsCollection.deleteOne({_id:new ObjectId(id)});
        res.send(result);
