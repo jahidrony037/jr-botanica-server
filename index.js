@@ -16,6 +16,31 @@ app.use(express.json());
 app.use(cookieParser());
 
 
+//custom middleware
+
+const verifyToken = async (req,res,next)=>{
+  const token=req.cookies.token;
+  if(!token){
+      return res.status(401).send({message: 'unAuthorized'});
+  }
+  if(token){
+      jwt.verify(token,process.env.ACCESS_SECRET_TOKEN, (error,decoded)=>{
+          if(error){
+              return res.status(401).send({message: 'unAuthorized access'});
+          }
+          if(decoded){
+              // console.log(decoded);
+              req.user = decoded.email;
+              next();
+          }
+      })
+  }
+  
+}
+
+
+
+
 
 
 
@@ -40,15 +65,25 @@ async function run() {
 
 
     //auth related api
+
+    //create a jwt token for user api
     app.post('/jwt', async(req, res)=>{
       const user = req.body;
-      console.log(user);
+      // console.log(user);
       const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {expiresIn:'1hr'});
       res.cookie('token',token,{
         httpOnly:true,
         secure: process.env.NODE_ENV === 'production', 
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
       })
+      .send({success:true})
+    })
+
+    //logout api
+    app.post('/logOut', async(req,res)=>{
+      // const user = req.body;
+      // console.log("user-logout", user);
+      res.clearCookie('token', {maxAge:0})
       .send({success:true})
     })
 
@@ -66,7 +101,7 @@ async function run() {
     //food features api
 
     //food add api
-    app.post('/addFood', async (req,res)=>{
+    app.post('/addFood', verifyToken, async (req,res)=>{
         const food = req.body;
         // console.log(food);
         const modifyFood = {
@@ -119,7 +154,8 @@ async function run() {
 
 
     //for a single food get api 
-    app.get('/food/:id', async(req,res)=>{
+    app.get('/food/:id', verifyToken, async(req,res)=>{
+      // console.log("cookies", req.cookies);
       const id = req.params.id;
       // console.log(id);
       const query = {_id:new ObjectId(id)}
@@ -128,7 +164,7 @@ async function run() {
     })
 
     //for a single food patch api
-    app.patch('/food/:id', async(req, res)=>{
+    app.patch('/food/:id', verifyToken, async(req, res)=>{
       const id= req.params.id;
       const updateValue= req.body;
       // console.log(updateValue);
@@ -148,8 +184,8 @@ async function run() {
     })
 
 
-    //all foods load api by specific user added
-    app.get('/userFoods', async (req,res)=>{
+    //all available foods load api by specific user added food
+    app.get('/userFoods', verifyToken, async (req,res)=>{
         const user = req.query;
         // console.log(user);
         const result = await foodsCollection.find({donator_email: user?.email}).toArray();
@@ -158,7 +194,7 @@ async function run() {
 
 
     //all requested food fetch api by user
-    app.get('/requestedFoods', async(req,res)=>{
+    app.get('/requestedFoods', verifyToken, async(req,res)=>{
       const request_user= req.query;
       // console.log(request_user);
       const result = await foodsCollection.find({requested_user:request_user?.email}).toArray();
@@ -166,14 +202,15 @@ async function run() {
     })
 
     //handle delete food api
-    app.delete('/deleteFood/:id', async(req,res)=>{
+    app.delete('/deleteFood/:id', verifyToken, async(req,res)=>{
        const id=req.params.id;
        const result = await foodsCollection.deleteOne({_id:new ObjectId(id)});
        res.send(result);
     })
 
     //update food api 
-    app.patch('/updateFood/:id', async(req,res)=>{
+    app.patch('/updateFood/:id', verifyToken, async(req,res)=>{
+      // console.log('token ', req.cookies);
         const id= req.params.id;
         const query = {_id: new ObjectId(id)}
         // console.log(id);
