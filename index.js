@@ -127,7 +127,7 @@ async function run() {
     
     //all food get api
     app.get('/foods', async(req,res)=>{
-        const result = await foodsCollection.find().sort({food_quantity:-1},).limit(6).toArray();
+        const result = await foodsCollection.find().sort({food_quantity:-1},{food_status:'available'}).limit(6).toArray();
         res.send(result);
     })
 
