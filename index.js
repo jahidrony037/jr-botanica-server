@@ -9,8 +9,9 @@ const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors({
-    origin:[`${process.env.CLIENT_URL}`, `${process.env.CLIENT_URL1}`, `${process.env.SERVER_URL}`, `${process.env.P_SERVER_URL}`, `${process.env.L_CLIENT_URL}`],
-    credentials:true
+    origin:[`${process.env.CLIENT_URL}`, `${process.env.CLIENT_URL1}`, `${process.env.SERVER_URL}`,  `${process.env.L_CLIENT_URL}`],
+    credentials:true,
+    optionsSuccessStatus:200
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -20,7 +21,7 @@ app.use(cookieParser());
 
 const verifyToken = async (req,res,next)=>{
   const token=req.cookies.token;
-  console.log(token);
+  // console.log(token);
   if(!token){
       return res.status(401).send({message: 'unAuthorized'});
   }
@@ -95,17 +96,10 @@ async function run() {
 
 
 
-
-
-
-
-
-
-
     //food features api
 
     //food add api
-    app.post('/addFood', verifyToken, async (req,res)=>{
+    app.post('/addFood', async (req,res)=>{
         const food = req.body;
         // console.log(food);
         const modifyFood = {
@@ -158,7 +152,7 @@ async function run() {
 
 
     //for a single food get api 
-    app.get('/food/:id', verifyToken, async(req,res)=>{
+    app.get('/food/:id', async(req,res)=>{
       // console.log("cookies", req.cookies);
       const id = req.params.id;
       // console.log(id);
@@ -168,7 +162,7 @@ async function run() {
     })
 
     //for a single food patch api
-    app.patch('/food/:id', verifyToken, async(req, res)=>{
+    app.patch('/food/:id', async(req, res)=>{
       const id= req.params.id;
       const updateValue= req.body;
       // console.log(updateValue);
@@ -189,11 +183,11 @@ async function run() {
 
 
     //all available foods load api by specific user added food
-    app.get('/userFoods', verifyToken, async (req,res)=>{
+    app.get('/userFoods', /*verifyToken,*/ async (req,res)=>{
       // console.log(req.query?.email);
-      if(req.query?.email!== req.user){
-        return res.status(403).send({message: 'Forbidden Access'});
-      }
+      // if(req.query?.email!== req.user){
+      //   return res.status(403).send({message: 'Forbidden Access'});
+      // }
         const user = req.query;
         // console.log(user);
         const result = await foodsCollection.find({donator_email: user?.email}).toArray();
@@ -202,10 +196,10 @@ async function run() {
 
 
     //all requested food fetch api by user
-    app.get('/requestedFoods', verifyToken, async(req,res)=>{
-      if(req.query?.email!== req.user){
-        return res.status(403).send({message: 'Forbidden Access'});
-      }
+    app.get('/requestedFoods', /*verifyToken,*/ async(req,res)=>{
+      // if(req.query?.email!== req.user){
+      //   return res.status(403).send({message: 'Forbidden Access'});
+      // }
       const request_user= req.query;
       // console.log(request_user);
       const result = await foodsCollection.find({requested_user:request_user?.email}).toArray();
@@ -213,7 +207,7 @@ async function run() {
     })
 
     //handle delete food api
-    app.delete('/deleteFood/:id', verifyToken, async(req,res)=>{
+    app.delete('/deleteFood/:id', async(req,res)=>{
 
        const id=req.params.id;
        const result = await foodsCollection.deleteOne({_id:new ObjectId(id)});
@@ -221,7 +215,7 @@ async function run() {
     })
 
     //update food api 
-    app.patch('/updateFood/:id', verifyToken, async(req,res)=>{
+    app.patch('/updateFood/:id', async(req,res)=>{
       // console.log('token ', req.cookies);
         const id= req.params.id;
         const query = {_id: new ObjectId(id)}
